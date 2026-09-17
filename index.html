@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Timer</title>
+    <title>Web Timer with Sound</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -73,7 +73,6 @@
         <div id="statusMessage"></div>
 
         <div class="control-buttons">
-            <!-- Added direct onclick actions to completely bypass loading state delays -->
             <button id="startPauseBtn" class="btn start" onclick="toggleTimer()">Start</button>
             <button id="resetBtn" class="btn reset" onclick="resetTimer()">Reset</button>
         </div>
@@ -93,11 +92,55 @@
         </div>
     </div>
 
-    <!-- Script block placed explicitly at the bottom of the body section -->
     <script>
         let totalSeconds = 0;
         let timerInterval = null;
         let isRunning = false;
+        let audioCtx = null;
+
+        // Initialize Audio context safely upon first click interaction
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Helper function to synthesize custom tone frequencies 
+        function playTone(frequency, duration, type = 'sine') {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.value = frequency;
+                
+                // Smoothly fade out sound to prevent clicks/pops
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.log("Audio play blocked or unsupported:", e);
+            }
+        }
+
+        // Alarm sequence tone loop when timer completes
+        function playAlarm() {
+            let count = 0;
+            const interval = setInterval(() => {
+                if (count >= 3 || totalSeconds > 0) { 
+                    clearInterval(interval); 
+                    return; 
+                }
+                playTone(880, 0.15, 'square'); // Sharp alarm beep
+                count++;
+            }, 250);
+        }
 
         function updateDisplay() {
             const displayElement = document.getElementById('display');
@@ -124,10 +167,12 @@
                 if (statusMessage) {
                     statusMessage.textContent = "Time's up!";
                 }
+                playAlarm(); // Triggers the ending sound sequence
             }
         }
 
         function toggleTimer() {
+            initAudio();
             const statusMessage = document.getElementById('statusMessage');
             if (statusMessage) statusMessage.textContent = "";
             
@@ -171,15 +216,22 @@
         }
 
         function adjustTime(amount) {
+            initAudio();
             const statusMessage = document.getElementById('statusMessage');
             if (statusMessage) statusMessage.textContent = "";
             
+            // Play sounds based on adding or deducting time
+            if (amount > 0) {
+                playTone(600, 0.08); // Sharp high pitch beep for addition
+            } else if (amount < 0 && totalSeconds > 0) {
+                playTone(300, 0.1);  // Lower pitch flat boop for deduction
+            }
+
             totalSeconds += amount;
             if (totalSeconds < 0) totalSeconds = 0;
             updateDisplay();
         }
 
-        // Run instantly upon source rendering
         updateDisplay();
     </script>
 </body>
