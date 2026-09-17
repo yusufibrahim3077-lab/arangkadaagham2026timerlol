@@ -6,7 +6,7 @@
     <title>Web Timer</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #f0f2f5;
             display: flex;
             justify-content: center;
@@ -22,7 +22,7 @@
             text-align: center;
             width: 320px;
         }
-        h1 { color: #333; margin-bottom: 10px; }
+        h1 { color: #333; margin-top: 0; margin-bottom: 10px; }
         #display {
             font-size: 4rem;
             font-weight: bold;
@@ -73,39 +73,39 @@
         <div id="statusMessage"></div>
 
         <div class="control-buttons">
-            <button id="startPauseBtn" class="btn start">Start</button>
-            <button id="resetBtn" class="btn reset">Reset</button>
+            <!-- Added direct onclick actions to completely bypass loading state delays -->
+            <button id="startPauseBtn" class="btn start" onclick="toggleTimer()">Start</button>
+            <button id="resetBtn" class="btn reset" onclick="resetTimer()">Reset</button>
         </div>
 
         <div class="modifier-section">
             <h3>Adjust Time</h3>
             <div class="modifier-row">
-                <button id="add10" class="btn add">+10s</button>
-                <button id="add30" class="btn add">+30s</button>
-                <button id="add60" class="btn add">+1m</button>
+                <button class="btn add" onclick="adjustTime(10)">+10s</button>
+                <button class="btn add" onclick="adjustTime(30)">+30s</button>
+                <button class="btn add" onclick="adjustTime(60)">+1m</button>
             </div>
             <div class="modifier-row">
-                <button id="sub10" class="btn deduct">-10s</button>
-                <button id="sub30" class="btn deduct">-30s</button>
-                <button id="sub60" class="btn deduct">-1m</button>
+                <button class="btn deduct" onclick="adjustTime(-10)">-10s</button>
+                <button class="btn deduct" onclick="adjustTime(-30)">-30s</button>
+                <button class="btn deduct" onclick="adjustTime(-60)">-1m</button>
             </div>
         </div>
     </div>
 
+    <!-- Script block placed explicitly at the bottom of the body section -->
     <script>
         let totalSeconds = 0;
         let timerInterval = null;
         let isRunning = false;
 
-        const display = document.getElementById('display');
-        const startPauseBtn = document.getElementById('startPauseBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const statusMessage = document.getElementById('statusMessage');
-
         function updateDisplay() {
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            display.textContent = ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')};
+            const displayElement = document.getElementById('display');
+            if (displayElement) {
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                displayElement.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            }
         }
 
         function tick() {
@@ -115,27 +115,40 @@
             } else {
                 clearInterval(timerInterval);
                 isRunning = false;
-                startPauseBtn.textContent = 'Start';
-                startPauseBtn.className = 'btn start';
-                statusMessage.textContent = "Time's up!";
-                alert("Time's up!");
+                const startPauseBtn = document.getElementById('startPauseBtn');
+                if (startPauseBtn) {
+                    startPauseBtn.textContent = 'Start';
+                    startPauseBtn.className = 'btn start';
+                }
+                const statusMessage = document.getElementById('statusMessage');
+                if (statusMessage) {
+                    statusMessage.textContent = "Time's up!";
+                }
             }
         }
 
         function toggleTimer() {
-            statusMessage.textContent = "";
+            const statusMessage = document.getElementById('statusMessage');
+            if (statusMessage) statusMessage.textContent = "";
+            
+            const startPauseBtn = document.getElementById('startPauseBtn');
+
             if (isRunning) {
                 clearInterval(timerInterval);
-                startPauseBtn.textContent = 'Start';
-                startPauseBtn.className = 'btn start';
+                if (startPauseBtn) {
+                    startPauseBtn.textContent = 'Start';
+                    startPauseBtn.className = 'btn start';
+                }
             } else {
                 if (totalSeconds === 0) {
-                    statusMessage.textContent = "Please add some time first!";
+                    if (statusMessage) statusMessage.textContent = "Please add some time first!";
                     return;
                 }
                 timerInterval = setInterval(tick, 1000);
-                startPauseBtn.textContent = 'Pause';
-                startPauseBtn.className = 'btn pause';
+                if (startPauseBtn) {
+                    startPauseBtn.textContent = 'Pause';
+                    startPauseBtn.className = 'btn pause';
+                }
             }
             isRunning = !isRunning;
         }
@@ -144,29 +157,29 @@
             clearInterval(timerInterval);
             totalSeconds = 0;
             isRunning = false;
-            startPauseBtn.textContent = 'Start';
-            startPauseBtn.className = 'btn start';
-            statusMessage.textContent = "";
+            
+            const startPauseBtn = document.getElementById('startPauseBtn');
+            if (startPauseBtn) {
+                startPauseBtn.textContent = 'Start';
+                startPauseBtn.className = 'btn start';
+            }
+            
+            const statusMessage = document.getElementById('statusMessage');
+            if (statusMessage) statusMessage.textContent = "";
+            
             updateDisplay();
         }
 
         function adjustTime(amount) {
-            statusMessage.textContent = "";
+            const statusMessage = document.getElementById('statusMessage');
+            if (statusMessage) statusMessage.textContent = "";
+            
             totalSeconds += amount;
             if (totalSeconds < 0) totalSeconds = 0;
             updateDisplay();
         }
 
-        startPauseBtn.addEventListener('click', toggleTimer);
-        resetBtn.addEventListener('click', resetTimer);
-        
-        document.getElementById('add10').addEventListener('click', () => adjustTime(10));
-        document.getElementById('add30').addEventListener('click', () => adjustTime(30));
-        document.getElementById('add60').addEventListener('click', () => adjustTime(60));
-        document.getElementById('sub10').addEventListener('click', () => adjustTime(-10));
-        document.getElementById('sub30').addEventListener('click', () => adjustTime(-30));
-        document.getElementById('sub60').addEventListener('click', () => adjustTime(-60));
-
+        // Run instantly upon source rendering
         updateDisplay();
     </script>
 </body>
